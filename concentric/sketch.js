@@ -3,10 +3,7 @@ function setup() {
   createCanvas(400,400);
 }
 
-//Changes the speed of the ball
 var numberOfCircles = 40;
-
-//Do not touch for any reason other than for debugging
 
 
 function draw() {
