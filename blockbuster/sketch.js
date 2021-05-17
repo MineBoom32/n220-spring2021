@@ -9,6 +9,39 @@ function preload() {
   breakSound = loadSound("sound/break");
   tickSound = loadSound("sound/tick");
   riseSound = loadSound("sound/rise");
+  levelUpSound = loadSound("sound/levelup");
+  mainMusic = loadSound("sound/mainMusic");
+  dangerMusic = loadSound("sound/dangerMusic");
+  bgImage = loadImage("images/bg.png");
+}
+
+// Setting placeholders
+var musicSlider;
+var soundSlider;
+var muteCheckbox;
+
+// Level variables
+  var level
+  var levelLength
+  var blocksToNextLevel
+  var blockDelay
+  var activeDelay
+function resetLevel() {
+  level = 1
+  levelLength = 50
+  blocksToNextLevel = levelLength
+  blockDelay = 45;
+  activeDelay = blockDelay;
+}
+resetLevel();
+
+// Level up
+function levelUp() {
+  level++;
+  blockDelay = Math.ceil(blockDelay * 0.9);
+  levelLength = Math.ceil(levelLength * 1.2);
+  blocksToNextLevel = levelLength;
+  levelUpSound.play();
 }
 
 var gameState = 0; // 0 = title, 1 = in-game, 2 = game over
@@ -30,6 +63,11 @@ var colorPreviews = ["#ffffff88", "#dd444488", "#44aa4488", "#4444aa88", "#cccc4
 var ghostCellY = 0;
 var ghostCellX = 0;
 
+// Variables for the danger state
+var isInDanger = false;
+var dangerRedAlpha = 0;
+var redAlphaChangeIncrement = -5;
+
 var grid = [];
 // Create all the grid cells to be used for the game
 for (x=0; x<8; x++) {
@@ -44,7 +82,7 @@ for (x=0; x<8; x++) {
 
 // Variables for the rising row system
 var newRowColors = [0, 0, 0, 0, 0, 0, 0, 0]
-var rowTimer = 300;
+var rowTimer =  (activeDelay * 9) + 60;
 
 // Variables for aiming
 var colorToDrop = 1;
@@ -55,81 +93,89 @@ function setup() {
   createCanvas(800,550);
   fill(0,0,255);
   textFont("arial");
+
+  // Setting handlers
+  musicSlider = document.getElementById("musicVolumeSlider");
+  soundSlider = document.getElementById("soundVolumeSlider");
+  muteCheckbox = document.getElementById("muteCheckbox");
 }
 
 
 
 function mousePressed() {
 
-  
-  // Places block if the game has started
-  if (gameState == 1) {
-    for (y=11; y>=0; y--) {
-      // Look for adjacent blocks of the same color before fully placing the new block
-      function scanBlock(block) {
-        // If an adjacent block is found, score is added and the 
-        if (block.color == colorToDrop) {
-          breakSound.play();
-          clearBlock(grid[aimColumn][y],aimColumn,y);
-          // As this is recursive, it won't finish until every adjacent block is cleared.
-          console.log("Chain was " + chainCount);
-          score += (10 * (2**chainCount) ); // More points are earned from a higher chain count
-          displayedChain = chainCount; // Sets the chain number to be displayed
-          chainCount = 0; // Resets the chain counter 
-          chainCooldownTimer = chainCooldownStart; // Starts the countdown for the chain display timer
-          gravity();
-          return true
-        }
-        else {
-          return false
-        }
-      }
-      
-      console.log("Drop!");
-      if (grid[aimColumn][y].color == 0) {
-        // Check below
-        if (grid[aimColumn][y+1]) {
-          var check = scanBlock(grid[aimColumn][y+1]);
-          if (check == true) {
-            break
+  if (mouseY <= height) {
+    // Places block if the game has started
+    if (gameState == 1) {
+      for (y=11; y>=0; y--) {
+        // Look for adjacent blocks of the same color before fully placing the new block
+        function scanBlock(block) {
+          // If an adjacent block is found, score is added and the 
+          if (block.color == colorToDrop) {
+            breakSound.play();
+            clearBlock(grid[aimColumn][y],aimColumn,y);
+            // As this is recursive, it won't finish until every adjacent block is cleared.
+            console.log("Chain was " + chainCount);
+            score += (10 * (2**chainCount) ); // More points are earned from a higher chain count
+            displayedChain = chainCount; // Sets the chain number to be displayed
+            chainCount = 0; // Resets the chain counter 
+            chainCooldownTimer = chainCooldownStart; // Starts the countdown for the chain display timer
+            gravity();
+            return true
+          }
+          else {
+            return false
           }
         }
-        // Check to the right
-        if (grid[aimColumn+1]) {
-          var check = scanBlock(grid[aimColumn+1][y]);
-          if (check == true) {
-            break
+        
+        console.log("Drop!");
+        if (grid[aimColumn][y].color == 0) {
+          // Check below
+          if (grid[aimColumn][y+1]) {
+            var check = scanBlock(grid[aimColumn][y+1]);
+            if (check == true) {
+              break
+            }
           }
-        }
-        // Check to the left
-        if (grid[aimColumn-1]) {
-          var check = scanBlock(grid[aimColumn-1][y]);
-          if (check == true) {
-            break
+          // Check to the right
+          if (grid[aimColumn+1]) {
+            var check = scanBlock(grid[aimColumn+1][y]);
+            if (check == true) {
+              break
+            }
           }
+          // Check to the left
+          if (grid[aimColumn-1]) {
+            var check = scanBlock(grid[aimColumn-1][y]);
+            if (check == true) {
+              break
+            }
+          }
+          grid[aimColumn][y].color = colorToDrop;
+          console.log("Changed block color at X = " + aimColumn + ", Y = " + y + " to color " + colorToDrop);
+          dropSound.play();
+          break
         }
-        grid[aimColumn][y].color = colorToDrop;
-        console.log("Changed block color at X = " + aimColumn + ", Y = " + y + " to color " + colorToDrop);
-        dropSound.play();
-        break
       }
     }
-  }
-  // Otherwise, starts the game
-  else {
-    for (x=0; x<8; x++) {
-      for (y=0; y<12; y++) {
-        grid[x][y].color = 0;
+    // Otherwise, starts the game
+    else {
+      for (x=0; x<8; x++) {
+        for (y=0; y<12; y++) {
+          grid[x][y].color = 0;
+        }
+        newRowColors[x] = 0;
       }
-      newRowColors[x] = 0;
       score = 0;
       displayedChain = 0;
+      gameState = 1;
+      resetLevel();
     }
-    gameState = 1;
-  }
 
-  // Chooses a new color after dropping a block
-  colorToDrop = ( Math.floor(Math.random() * 4) + 1 );
+    // Chooses a new color after dropping a block
+    colorToDrop = ( Math.floor(Math.random() * 4) + 1 );
+    }
+  
 }
 
 function gravity() {
@@ -155,6 +201,10 @@ function gravity() {
 function clearBlock (object,canBreakUp) {
 
   chainCount++; // Adds to the chain count by 1; this adds up due to the function's recursiveness!
+  blocksToNextLevel--;
+  if (blocksToNextLevel <= 0) {
+    levelUp();
+  }
 
   // Retrieves the x and y positions (on the cell grid) of the block
   var xPos = object.positionX;
@@ -209,21 +259,91 @@ function draw() {
   background(255);
   strokeWeight(1);
 
-  // Performs actions related to block adding in 30 frame intervals (if the game has started)
+  image(bgImage, 0, 0);
+
+  // Apply volume settings  
+  var soundVolume = Number(soundSlider.value);
+  var musicVolume = Number(musicSlider.value);
+  var muted = muteCheckbox.checked
+  // console.log(muted);
+  if (muted == false) {
+    dropSound.setVolume(soundVolume);
+    breakSound.setVolume(soundVolume);
+    tickSound.setVolume(soundVolume);
+    riseSound.setVolume(soundVolume);
+    mainMusic.setVolume(musicVolume);
+    dangerMusic.setVolume(musicVolume);
+  }
+  else {
+    dropSound.setVolume(0);
+    breakSound.setVolume(0);
+    tickSound.setVolume(0);
+    riseSound.setVolume(0);
+    mainMusic.setVolume(0);
+    dangerMusic.setVolume(0);
+  }
+  
   if (gameState == 1) {
+    var didBreak = false;
+    
+    // Danger related code
+    for (x=0; x<8; x++) {
+      
+      
+      // Checks each square in the column for a colored square
+      for (y=0; y<3; y++) {
+        if (grid[x][y].color != 0) {
+          isInDanger = true;
+          didBreak = true;
+          break;
+        }
+      }
+      if (didBreak == true) {
+        break;
+      }
+      
+    }
+
+    if (didBreak == false) {
+      isInDanger = false;
+    }
+
+    if (isInDanger == true) {
+      if (mainMusic.isPlaying() == true) {
+        mainMusic.pause();
+        dangerMusic.loop();
+      }
+      if ( (redAlphaChangeIncrement == -5) && (dangerRedAlpha == 0) ) {
+        redAlphaChangeIncrement = 5;
+      }
+      else if ( (redAlphaChangeIncrement == 5) && (dangerRedAlpha == 130) ) {
+        redAlphaChangeIncrement = -5;
+      }
+      dangerRedAlpha += redAlphaChangeIncrement;
+      background( 255, 0, 0, dangerRedAlpha )
+    }
+    else if ( (isInDanger == false) && (mainMusic.isPlaying() == false) ) {
+      mainMusic.loop();
+      dangerMusic.stop();
+    }
+    
+    // Performs actions related to block adding in 30 frame intervals (if the game has started)
     if (rowTimer > 0) {
       rowTimer--;
     }
     else {
-      rowTimer = 300;
+      if (blockDelay != activeDelay) {
+        activeDelay = blockDelay;
+      }
+      rowTimer = (activeDelay * 9) + 60;
     }
-    // Runs at 30 frame intervals
-    if (rowTimer % 30 == 0) {
-      var tickNumber = 9 - (rowTimer / 30);
+    // Runs at sets of 10 (9?) intervals
+    if (rowTimer % activeDelay == 0) {
+      var tickNumber = 9 - (rowTimer / activeDelay);
       console.log(tickNumber);
       if ( (tickNumber < 9)&&(tickNumber > 0) ) {
         newRowColors[tickNumber-1] = ( Math.floor(Math.random() * 4) + 1 );
-        tickSound.play()
+        tickSound.play();
       }
       // Adds a new row at every 9th interval, or "tick"
       if (tickNumber == 9) {
@@ -235,7 +355,9 @@ function draw() {
             if (score > highScore) {
               highScore = score;
             }
-            break
+            mainMusic.stop();
+            dangerMusic.stop();
+            break;
           }
           // Pushes up the new row
           for (y=1; y<11; y++) {
@@ -248,11 +370,12 @@ function draw() {
           newRowColors[x] = 0;
           
         }
-        riseSound.play()
+        riseSound.play();
       }
     }
   }
   
+
   // Redraw the cells
   for (x=0; x<8; x++) {
     for (y=0; y<12; y++) {
@@ -286,15 +409,19 @@ function draw() {
   } 
 
   // Display scoring data
-  fill(0);
+  fill(255);
   
   textAlign(LEFT);
   textSize(48);
   text("Score", 500, 100);
   text("High Score", 500, 225);
+  text("Level", 50, 100);
+  text("Next", 50, 225);
   textSize(32);
   text(score, 500, 150);
   text(highScore, 500, 275);
+  text(level, 50, 150);
+  text(blocksToNextLevel, 50, 275);
 
   // Display the chain counter
   if (chainCooldownTimer > 0) {
