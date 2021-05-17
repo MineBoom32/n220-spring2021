@@ -9,6 +9,11 @@
     body {
       padding: 0;
       margin: 0;
+      background-color: darkslategray;
+      color: white;
+    }
+    p {
+      width: 800px;
     }
   </style>
   <script src="../p5.js"></script>
@@ -20,10 +25,13 @@
   <main>
   </main>
   <br>
-  <h1>Settings</h1>
+  <h1>How to play</h1>
+  <p>Use the mouse to aim your blocks, and click to drop them on the board. The transparent "ghost block" shown on the board displays where the block will land when it's dropped. If it hits a block of the same color, it and any connected blocks will disappear. You get extra points for clearing larger groups.</p>
+  <p>If a new row of blocks is added when a block is at the top of the field, it's game over.</p>
   <br>
+  <h1>Settings</h1>
   <h2>Sound:</h2>
-  <p>Music Volume: <input type="range" name="musicvolume" id="musicVolumeSlider" min="0" max="1" step="0.1" value="1"></p>
+  <p>Music Volume: <input type="range" name="musicvolume" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5"></p>
   <p>SFX Volume: <input type="range" name="soundvolume" id="soundVolumeSlider" min="0" max="1" step="0.1" value="1"></p>
   <p>Mute: <input type="checkbox" name="mute" id="muteCheckbox"></p>
   <br>
