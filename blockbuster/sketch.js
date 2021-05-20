@@ -87,6 +87,7 @@ var rowTimer =  (activeDelay * 9) + 60;
 // Variables for aiming
 var colorToDrop = 1;
 var aimColumn = 4;
+var colorQueue = [0, 0, 0]
 
 function setup() {
   // put setup code here
@@ -166,6 +167,11 @@ function mousePressed() {
         }
         newRowColors[x] = 0;
       }
+
+      for (i=0; i<3; i++) {
+        colorQueue[i] = ( Math.floor(Math.random() * 4) + 1 )
+      }
+
       score = 0;
       displayedChain = 0;
       gameState = 1;
@@ -173,7 +179,9 @@ function mousePressed() {
     }
 
     // Chooses a new color after dropping a block
-    colorToDrop = ( Math.floor(Math.random() * 4) + 1 );
+    colorToDrop = colorQueue[0];
+    colorQueue.push( Math.floor(Math.random() * 4) + 1 );
+    colorQueue.shift();
     }
   
 }
@@ -406,30 +414,42 @@ function draw() {
       square( (aimColumn*scalar + offsetX), (y*scalar + offsetY), scalar );
       break
     }
-  } 
+  }
+
+  // Draw the queue
+  for (i=0; i<3; i++) {
+    var queueColorNumber = colorQueue[i];
+    fill(colors[queueColorNumber]);
+    square( 475, 64 + (i * scalar * 2), scalar * 1.5 );
+  }
+  textAlign(CENTER);
+  textSize(24);
+  fill(255);
+  text("NEXT", 499, 48);
 
   // Display scoring data
-  fill(255);
+  
   
   textAlign(LEFT);
   textSize(48);
-  text("Score", 500, 100);
-  text("High Score", 500, 225);
+  text("Score", 500, 300);
+  text("High Score", 500, 425);
   text("Level", 50, 100);
   text("Next", 50, 225);
   textSize(32);
-  text(score, 500, 150);
-  text(highScore, 500, 275);
+  text(score, 500, 350);
+  text(highScore, 500, 475);
   text(level, 50, 150);
   text(blocksToNextLevel, 50, 275);
 
   // Display the chain counter
+  textAlign(RIGHT);
   if (chainCooldownTimer > 0) {
     if (displayedChain >= 4) {
       textSize(100);
-      text(displayedChain, 500, 400);
+      text(displayedChain, 175, 400);
       textSize(50);
-      text("CHAIN", 500, 450);
+      text("CHAIN", 175, 450);
     }
     chainCooldownTimer--;
   }
